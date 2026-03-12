@@ -1,0 +1,19 @@
+server:
+  port: 8081 # Usamos el 8081 para no colisionar con otros posibles microservicios
+
+spring:
+  application:
+    name: chat-service
+  graphql:
+    graphiql:
+      enabled: true
+      path: /graphiql
+    websocket:
+      path: /graphql
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://securetoken.google.com/adoptiswarch
+
+# JWT Settings Firebase (Reemplaza YOUR_FIREBASE_PROJECT_ID en issuer-uri luego)

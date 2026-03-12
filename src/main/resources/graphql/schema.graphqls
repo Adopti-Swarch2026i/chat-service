@@ -1,0 +1,23 @@
+type Conversation {
+    id: ID!
+    participantIds: [String!]!
+    createdAt: Float
+    updatedAt: Float
+}
+
+type Message {
+    id: ID!
+    conversationId: String!
+    senderId: String!
+    content: String!
+    timestamp: Float
+}
+
+type Query {
+    conversations(userId: String!): [Conversation]
+    messages(conversationId: String!): [Message]
+}
+
+type Mutation {
+    createConversation(participantIds: [String!]!): Conversation
+}

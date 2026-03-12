@@ -1,0 +1,22 @@
+# Maven
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+
+# Firebase credentials — nunca subir al repo
+src/main/resources/*.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
