@@ -1,6 +1,7 @@
 type Conversation {
     id: ID!
     participantIds: [String!]!
+    participantNames: [String!]!
     createdAt: Float
     updatedAt: Float
 }

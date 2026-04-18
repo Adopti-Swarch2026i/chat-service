@@ -14,6 +14,7 @@ import java.util.List;
 public class Conversation {
     private String id;
     private List<String> participantIds;
+    private List<String> participantNames;
     private Long createdAt;
     private Long updatedAt;
 }

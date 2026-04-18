@@ -1,14 +1,27 @@
-# Usar imagen base optimizada
-FROM eclipse-temurin:17-jdk-alpine
+# ---------- Stage 1: build con Maven ----------
+FROM eclipse-temurin:17-jdk-jammy AS build
 
-# Directorio de trabajo
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends maven \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
+COPY pom.xml .
+RUN mvn dependency:go-offline -B
 
-# Copiar el compilado usando el target por defecto de de la build de Maven
-COPY target/chat-0.0.1-SNAPSHOT.jar app.jar
+COPY src ./src
+RUN mvn package -DskipTests -B
 
-# Exponer el puerto del microservicio (8081)
+# ---------- Stage 2: runtime ----------
+FROM eclipse-temurin:17-jre-jammy
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends wget \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY --from=build /app/target/chat-0.0.1-SNAPSHOT.jar app.jar
+
 EXPOSE 8081
 
-# Ejecutar el microservicio
 ENTRYPOINT ["java", "-jar", "app.jar"]

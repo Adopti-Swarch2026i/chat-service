@@ -4,12 +4,21 @@ import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.Query;
 import com.google.cloud.firestore.QuerySnapshot;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthException;
+import com.google.firebase.auth.UserRecord;
 import com.google.firebase.cloud.FirestoreClient;
 import com.petfinder.chat.model.Conversation;
 import com.petfinder.chat.model.Message;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
@@ -17,6 +26,7 @@ import java.util.stream.Collectors;
 @Service
 public class ChatService {
 
+    private static final Logger log = LoggerFactory.getLogger(ChatService.class);
     private static final String CONVERSATIONS_COLLECTION = "conversations";
     private static final String MESSAGES_COLLECTION = "messages";
 
@@ -26,9 +36,11 @@ public class ChatService {
 
     public Conversation createConversation(List<String> participantIds) {
         String id = UUID.randomUUID().toString();
+        List<String> names = resolveNames(participantIds);
         Conversation conversation = Conversation.builder()
                 .id(id)
                 .participantIds(participantIds)
+                .participantNames(names)
                 .createdAt(System.currentTimeMillis())
                 .updatedAt(System.currentTimeMillis())
                 .build();
@@ -50,6 +62,7 @@ public class ChatService {
 
             return future.get().getDocuments().stream()
                     .map(doc -> doc.toObject(Conversation.class))
+                    .map(this::ensureParticipantNames)
                     .collect(Collectors.toList());
         } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException("Error fetching conversations", e);
@@ -81,18 +94,55 @@ public class ChatService {
         }
 
         try {
-            // Guardar el mensaje
             getFirestore().collection(MESSAGES_COLLECTION).document(message.getId()).set(message).get();
-            
-            // Actualizar la última vez que la conversación tuvo un movimiento
-            // de forma asíncrona pero esperando el primer set
             getFirestore().collection(CONVERSATIONS_COLLECTION)
                     .document(message.getConversationId())
                     .update("updatedAt", System.currentTimeMillis());
-
             return message;
         } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException("Error saving message", e);
         }
+    }
+
+    private Conversation ensureParticipantNames(Conversation c) {
+        if (c.getParticipantNames() == null || c.getParticipantNames().isEmpty()
+                || c.getParticipantNames().size() != c.getParticipantIds().size()) {
+            List<String> resolved = resolveNames(c.getParticipantIds());
+            c.setParticipantNames(resolved);
+            try {
+                Map<String, Object> patch = new HashMap<>();
+                patch.put("participantNames", resolved);
+                getFirestore().collection(CONVERSATIONS_COLLECTION)
+                        .document(c.getId())
+                        .update(patch);
+            } catch (Exception e) {
+                log.warn("Could not backfill participantNames for conversation {}: {}", c.getId(), e.getMessage());
+            }
+        }
+        return c;
+    }
+
+    private List<String> resolveNames(List<String> uids) {
+        if (uids == null) return Collections.emptyList();
+        List<String> names = new ArrayList<>(uids.size());
+        for (String uid : uids) {
+            names.add(resolveName(uid));
+        }
+        return names;
+    }
+
+    private String resolveName(String uid) {
+        try {
+            UserRecord user = FirebaseAuth.getInstance().getUser(uid);
+            if (user.getDisplayName() != null && !user.getDisplayName().isBlank()) {
+                return user.getDisplayName();
+            }
+            if (user.getEmail() != null && !user.getEmail().isBlank()) {
+                return user.getEmail();
+            }
+        } catch (FirebaseAuthException e) {
+            log.warn("Could not resolve displayName for uid {}: {}", uid, e.getMessage());
+        }
+        return uid;
     }
 }

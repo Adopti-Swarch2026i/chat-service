@@ -14,6 +14,10 @@ target/
 # Firebase credentials — nunca subir al repo
 src/main/resources/*.json
 
+# Variables de entorno
+.env
+.env.local
+
 # OS
 .DS_Store
 Thumbs.db

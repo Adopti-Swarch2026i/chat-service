@@ -1,5 +1,5 @@
 server:
-  port: 8081 # Usamos el 8081 para no colisionar con otros posibles microservicios
+  port: ${SERVER_PORT:8081}
 
 spring:
   application:
@@ -14,6 +14,8 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: https://securetoken.google.com/adoptiswarch
+          issuer-uri: ${JWT_ISSUER_URI:https://securetoken.google.com/adoptiswarch-dc4da}
 
-# JWT Settings Firebase (Reemplaza YOUR_FIREBASE_PROJECT_ID en issuer-uri luego)
+firebase:
+  credentials:
+    path: ${FIREBASE_CREDENTIALS_PATH:src/main/resources/adoptiswarch-dc4da-firebase-adminsdk-fbsvc-21e2ea6cae.json}
