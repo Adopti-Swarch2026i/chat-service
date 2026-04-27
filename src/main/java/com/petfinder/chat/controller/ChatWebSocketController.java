@@ -1,5 +1,6 @@
 package com.petfinder.chat.controller;
 
+import com.petfinder.chat.messaging.ChatEventPublisher;
 import com.petfinder.chat.model.Message;
 import com.petfinder.chat.service.ChatService;
 import lombok.RequiredArgsConstructor;
@@ -14,16 +15,18 @@ public class ChatWebSocketController {
 
     private final ChatService chatService;
     private final SimpMessagingTemplate messagingTemplate;
+    private final ChatEventPublisher chatEventPublisher;
 
     @MessageMapping("/chat.send")
     public void sendMessage(@Payload Message message) {
-        // En un entorno de producción, validamos el token de User asociado al Principal aquí.
-        
         // Asignamos server timestamp y generamos UUID si no tiene
         Message savedMessage = chatService.saveMessage(message);
 
         // Distribuimos el mensaje a todos los subscritos en ese canal (Topic) de conversación
         String destination = "/topic/chat/" + savedMessage.getConversationId();
         messagingTemplate.convertAndSend(destination, savedMessage);
+
+        // Publicamos evento al broker para notification-service
+        chatEventPublisher.publishMessageSent(savedMessage);
     }
 }
