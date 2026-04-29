@@ -1,6 +1,7 @@
 package com.petfinder.chat.service;
 
 import com.google.api.core.ApiFuture;
+import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.Query;
 import com.google.cloud.firestore.QuerySnapshot;
@@ -19,6 +20,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
@@ -92,6 +94,12 @@ public class ChatService {
         if (message.getTimestamp() == null) {
             message.setTimestamp(System.currentTimeMillis());
         }
+        if (message.getRecipientId() == null || message.getRecipientId().isBlank()) {
+            String resolved = resolveRecipientId(message.getConversationId(), message.getSenderId());
+            if (resolved != null) {
+                message.setRecipientId(resolved);
+            }
+        }
 
         try {
             getFirestore().collection(MESSAGES_COLLECTION).document(message.getId()).set(message).get();
@@ -101,6 +109,33 @@ public class ChatService {
             return message;
         } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException("Error saving message", e);
+        }
+    }
+
+    public String resolveRecipientId(String conversationId, String senderId) {
+        if (conversationId == null || senderId == null) {
+            return null;
+        }
+        try {
+            DocumentSnapshot doc = getFirestore()
+                    .collection(CONVERSATIONS_COLLECTION)
+                    .document(conversationId)
+                    .get()
+                    .get();
+            if (!doc.exists()) {
+                return null;
+            }
+            Conversation conv = doc.toObject(Conversation.class);
+            if (conv == null || conv.getParticipantIds() == null) {
+                return null;
+            }
+            return conv.getParticipantIds().stream()
+                    .filter(uid -> !Objects.equals(uid, senderId))
+                    .findFirst()
+                    .orElse(null);
+        } catch (InterruptedException | ExecutionException e) {
+            log.warn("Could not resolve recipient for conversation {}: {}", conversationId, e.getMessage());
+            return null;
         }
     }
 

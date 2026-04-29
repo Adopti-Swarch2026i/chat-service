@@ -13,6 +13,7 @@ public class Message {
     private String id;
     private String conversationId;
     private String senderId;
+    private String recipientId;
     private String content;
     private Long timestamp;
 }

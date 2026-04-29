@@ -10,6 +10,11 @@ spring:
       path: /graphiql
     websocket:
       path: /graphql
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:rabbitmq}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME:adopti}
+    password: ${SPRING_RABBITMQ_PASSWORD:rabbitmq_secret}
   security:
     oauth2:
       resourceserver:
