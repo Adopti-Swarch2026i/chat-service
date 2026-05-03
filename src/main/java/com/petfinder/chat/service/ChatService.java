@@ -129,6 +129,11 @@ public class ChatService {
             if (conv == null || conv.getParticipantIds() == null) {
                 return null;
             }
+            // events.md §4.5: recipientId solo se resuelve en chats 1-1.
+            // Para conversaciones con >2 participantes el contrato exige null.
+            if (conv.getParticipantIds().size() != 2) {
+                return null;
+            }
             return conv.getParticipantIds().stream()
                     .filter(uid -> !Objects.equals(uid, senderId))
                     .findFirst()

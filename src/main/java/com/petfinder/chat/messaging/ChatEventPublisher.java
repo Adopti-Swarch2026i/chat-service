@@ -5,6 +5,7 @@ import com.petfinder.chat.model.Message;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
@@ -58,8 +59,14 @@ public class ChatEventPublisher {
                     payload,
                     amqpMessage -> {
                         MessageProperties props = amqpMessage.getMessageProperties();
+                        props.setDeliveryMode(MessageDeliveryMode.PERSISTENT);
                         props.setMessageId(eventId);
                         props.setTimestamp(Date.from(Instant.now()));
+                        // events.md §2 exige content_type=application/json
+                        // explícito. Aunque Jackson2JsonMessageConverter lo
+                        // setea, hacerlo aquí es defensivo si alguien cambia
+                        // el converter.
+                        props.setContentType(MessageProperties.CONTENT_TYPE_JSON);
                         props.setContentEncoding("UTF-8");
                         props.setHeader("eventId", eventId);
                         props.setHeader("eventTimestamp", eventTimestamp);
