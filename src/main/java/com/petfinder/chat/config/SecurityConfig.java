@@ -15,8 +15,10 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+                        // WebSocket handshake: auth se valida en StompAuthChannelInterceptor (CONNECT)
                         .requestMatchers("/ws/**").permitAll()
-                        .requestMatchers("/graphql", "/graphiql").permitAll()
+                        .requestMatchers("/health").permitAll()
+                        .requestMatchers("/graphql", "/graphiql").authenticated()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> {
                 }));
