@@ -1,5 +1,17 @@
 server:
-  port: ${SERVER_PORT:8081}
+  port: ${SERVER_PORT:8443}
+  ssl:
+    enabled: true
+    key-store: ${SSL_KEYSTORE:/app/certs/keystore.p12}
+    key-store-password: ${SSL_KEYSTORE_PASSWORD:changeit}
+    key-store-type: PKCS12
+    key-alias: chat-service
+    protocol: TLS
+    enabled-protocols: TLSv1.2,TLSv1.3
+    client-auth: need
+    trust-store: ${SSL_TRUSTSTORE:/app/certs/truststore.jks}
+    trust-store-password: ${SSL_TRUSTSTORE_PASSWORD:changeit}
+    trust-store-type: JKS
 
 spring:
   application:
@@ -12,9 +24,15 @@ spring:
       path: /graphql
   rabbitmq:
     host: ${SPRING_RABBITMQ_HOST:rabbitmq}
-    port: ${SPRING_RABBITMQ_PORT:5672}
+    port: ${SPRING_RABBITMQ_PORT:5671}
     username: ${SPRING_RABBITMQ_USERNAME:adopti}
     password: ${SPRING_RABBITMQ_PASSWORD:rabbitmq_secret}
+    ssl:
+      enabled: true
+      algorithm: TLSv1.3
+      trust-store: file:/app/certs/truststore.jks
+      trust-store-password: ${SSL_TRUSTSTORE_PASSWORD:changeit}
+      verify-hostname: true
   security:
     oauth2:
       resourceserver:
